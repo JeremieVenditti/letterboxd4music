@@ -116,14 +116,13 @@ If no issues, write VERDICT: PASS and nothing else." > .agent/feedback.md
 
   if [[ "$VERDICT" == "VERDICT: PASS" ]]; then
     echo ""
-    echo "✓ Passed review. Updating progress log and staging changes."
+    echo "✓ Passed review. Updating progress log."
     # Append to Done log
     echo "- [$(date '+%Y-%m-%d')] $TASK" >> PROGRESS.md
     # Mark matching roadmap item as done (first unchecked line containing key words)
     FIRST_WORD=$(echo "$TASK" | awk '{print $1}')
     sed -i '' "0,/- \[ \].*${FIRST_WORD}/{s/- \[ \]/- [x]/}" PROGRESS.md 2>/dev/null || true
-    git add -A
-    echo "✓ Changes staged. Review with 'git diff --staged', then commit when ready."
+    echo "✓ Review the changes with 'git diff', then stage and commit when ready."
 
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

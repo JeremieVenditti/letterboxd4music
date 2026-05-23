@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..800,0..100&family=Inter:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -7,8 +8,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-sans-brand);
+  --font-mono: var(--font-mono-brand);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -49,6 +50,25 @@
 }
 
 :root {
+  --green: #1ED760;
+  --coral: #F26B5B;
+  --indigo: #5B4DA6;
+  --mustard: #F4C842;
+  --cream: #F3E9D2;
+  --heart: var(--coral);
+  --bg-0: #0E1014;
+  --bg-1: #161A20;
+  --bg-2: #1B1F26;
+  --bg-3: #29303A;
+  --fg-1: #FFFFFF;
+  --fg-2: #C4C4C4;
+  --fg-3: #909090;
+  --fg-4: #5D6571;
+  --link: var(--indigo);
+  --danger: #EF5350;
+  --font-display: "Fraunces", serif;
+  --font-sans-brand: "Inter", sans-serif;
+  --font-mono-brand: "JetBrains Mono", monospace;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -84,10 +104,10 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
+  --background: var(--bg-0);
+  --foreground: var(--fg-1);
+  --card: var(--bg-2);
+  --card-foreground: var(--fg-1);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.922 0 0);
@@ -98,10 +118,10 @@
   --muted-foreground: oklch(0.708 0 0);
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --destructive: var(--danger);
+  --border: var(--fg-4);
+  --input: var(--bg-3);
+  --ring: var(--green);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -127,4 +147,13 @@
   html {
     @apply font-sans;
   }
+}
+
+.btn-default {
+  background: var(--bg-2);
+  border: 1px solid var(--fg-4);
+  border-radius: 4px;
+  color: var(--fg-1);
+  font-size: 13px;
+  font-weight: 600;
 }

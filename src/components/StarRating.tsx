@@ -3,10 +3,11 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import type { Score } from "@/types/database"
 
 interface StarRatingProps {
-  value: number | null
-  onChange?: (value: number) => void
+  value: Score | null
+  onChange?: (value: Score) => void
   size?: "sm" | "md" | "lg"
   showValue?: boolean
   disabled?: boolean
@@ -116,7 +117,7 @@ export function StarRating({
       return
     }
 
-    onChange(rating)
+    onChange(rating as Score)
   }
 
   function handleKeyDown(
@@ -142,7 +143,7 @@ export function StarRating({
       event.key === "ArrowRight" || event.key === "ArrowUp" ? 0.5 : -0.5
     const nextValue = wrapRating(rating + direction)
     pendingFocusValue.current = nextValue
-    onChange(nextValue)
+    onChange(nextValue as Score)
   }
 
   return (

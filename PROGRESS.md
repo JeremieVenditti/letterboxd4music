@@ -35,3 +35,4 @@
 
 - [2026-05-23] **2.1** build a half-star rating component at src/components/StarRating.tsx — interactive, 0.5 to 5.0 in half-star increments, hover preview, displays current value
 - [2026-05-23] **1.1** Supabase migrations: all tables + RLS policies
+- [2026-05-23] work on phase 1.2

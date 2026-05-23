@@ -36,6 +36,7 @@ export interface Review {
   rating_id: string
   user_id: string
   album_id: string
+  /** Max 2,000 characters — enforced by DB CHECK constraint and must be validated client-side before submit. */
   body: string
   like_count: number
   created_at: string

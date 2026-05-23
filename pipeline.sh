@@ -14,6 +14,7 @@ if [ -z "$TASK" ]; then
 fi
 
 PRD=$(cat PRD.md)
+DESIGN=$(cat DESIGN.md)
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -24,6 +25,9 @@ $CLAUDE "You are a senior software architect.
 
 PRD:
 $PRD
+
+DESIGN SYSTEM:
+$DESIGN
 
 TASK: $TASK
 
@@ -87,6 +91,9 @@ while [ $LOOP -lt $MAX_LOOPS ]; do
 
 SPEC:
 $SPEC
+
+DESIGN SYSTEM:
+$DESIGN
 
 CHANGES (git diff HEAD):
 $DIFF

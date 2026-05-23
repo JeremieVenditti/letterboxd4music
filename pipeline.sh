@@ -52,6 +52,28 @@ Rules:
 SPEC:
 $SPEC"
 
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "▶ TYPE CHECK — verifying compilation"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+cd src && npx tsc --noEmit 2>&1 | tee /tmp/tsc-output.txt; TSC_EXIT=${PIPESTATUS[0]}; cd ..
+npx next lint --quiet 2>&1 | tee /tmp/lint-output.txt; LINT_EXIT=${PIPESTATUS[0]}
+
+if [[ $TSC_EXIT -ne 0 || $LINT_EXIT -ne 0 ]]; then
+  echo ""
+  echo "⚠ Type/lint errors found — feeding back to Fixer before Critic review."
+  TSC_ERRORS=$(cat /tmp/tsc-output.txt)
+  LINT_ERRORS=$(cat /tmp/lint-output.txt)
+  $CODEX "You are a surgical code editor. Fix the following TypeScript and lint errors. Minimal changes only — do not refactor or add features.
+
+TYPE ERRORS:
+$TSC_ERRORS
+
+LINT ERRORS:
+$LINT_ERRORS"
+fi
+
 while [ $LOOP -lt $MAX_LOOPS ]; do
   echo ""
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -89,6 +111,40 @@ If no issues, write VERDICT: PASS and nothing else." > .agent/feedback.md
     git add -A
     git commit -m "feat: $TASK [agent pipeline]"
     echo "✓ Done."
+
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "▶ INTEGRATOR (Claude) — cross-component review"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+    DONE_ITEMS=$(grep "^\- \[x\]" PROGRESS.md || true)
+    ALL_SRC=$(find src -type f \( -name "*.ts" -o -name "*.tsx" \) ! -path "*/ui/*" ! -path "*/.next/*" | sort)
+    SRC_CONTENTS=""
+    for f in $ALL_SRC; do
+      SRC_CONTENTS="$SRC_CONTENTS\n\n--- $f ---\n$(cat $f)"
+    done
+
+    $CLAUDE "You are an integration reviewer. All items below have been built independently by separate agents. Review them together for consistency issues.
+
+COMPLETED ITEMS:
+$DONE_ITEMS
+
+SOURCE FILES:
+$SRC_CONTENTS
+
+Flag ONLY real problems:
+- Type mismatches across files (e.g. a prop defined one way, used another)
+- Broken imports or missing exports
+- Naming inconsistencies that will cause runtime errors
+- PRD constraint violations (half-star ratings 0.5–5.0, reviews max 2000 chars, one rating per user per album)
+
+Output to .agent/integration.md in this format:
+ISSUES FOUND: <number or 'none'>
+1. [file:line] description
+If no issues, write: ISSUES FOUND: none" > .agent/integration.md
+
+    echo ""
+    cat .agent/integration.md
     exit 0
   fi
 

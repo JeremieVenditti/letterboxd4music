@@ -81,6 +81,7 @@ If no issues, write VERDICT: PASS and nothing else." > .agent/feedback.md
   if [[ "$VERDICT" == "VERDICT: PASS" ]]; then
     echo ""
     echo "✓ Passed review. Committing."
+    echo "- [$(date '+%Y-%m-%d')] $TASK" >> PROGRESS.md
     git add -A
     git commit -m "feat: $TASK [agent pipeline]"
     echo "✓ Done."

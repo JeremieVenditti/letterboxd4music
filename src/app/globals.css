@@ -157,3 +157,12 @@
   font-size: 13px;
   font-weight: 600;
 }
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  color: var(--fg-1);
+  font-size: 12px;
+  font-weight: 600;
+}

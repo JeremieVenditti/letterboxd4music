@@ -121,7 +121,7 @@ If no issues, write VERDICT: PASS and nothing else." > .agent/feedback.md
     echo "- [$(date '+%Y-%m-%d')] $TASK" >> PROGRESS.md
     # Mark matching roadmap item as done (first unchecked line containing key words)
     FIRST_WORD=$(echo "$TASK" | awk '{print $1}')
-    sed -i '' "0,/- \[ \].*${FIRST_WORD}/{s/- \[ \]/- [x]/}" PROGRESS.md 2>/dev/null || true
+    perl -i '' -pe 'if (!$done && /- \[ \]/ && /'"$FIRST_WORD"'/) { s/- \[ \]/- [x]/; $done=1 }' PROGRESS.md 2>/dev/null || true
     echo "✓ Review the changes with 'git diff', then stage and commit when ready."
 
     echo ""
@@ -151,9 +151,10 @@ Flag ONLY real problems:
 - PRD constraint violations (half-star ratings 0.5–5.0, reviews max 2000 chars, one rating per user per album)
 
 Output to .agent/integration.md in this format:
+TASK: <name of the task just completed>
 ISSUES FOUND: <number or 'none'>
 1. [file:line] description
-If no issues, write: ISSUES FOUND: none" > .agent/integration.md
+If no issues, write ISSUES FOUND: none and nothing else." > .agent/integration.md
 
     echo ""
     cat .agent/integration.md

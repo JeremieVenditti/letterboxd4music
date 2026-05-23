@@ -1,5 +1,6 @@
+TASK: Phase 1.3 — App shell: root layout, header, footer
 ISSUES FOUND: 2
 
-1. [src/components/StarRating.tsx:38 / src/types/database.ts:1] Type mismatch: `StarRatingProps.onChange` is typed `(value: number) => void`, but the `ratings` table expects `score: Score` (a precise union `0.5 | 1.0 | … | 5.0`). Any component that wires StarRating directly to a Supabase insert will get a TypeScript error. Fix: narrow the callback signature to `(value: Score) => void`, or add an explicit cast/validation at the call site.
+1. [src/components/HeaderClient.tsx](src/components/HeaderClient.tsx#L27) The primary nav points all three links at `/search`, but there is no `/search` route in the current app tree. The app shell now renders top-level navigation that always leads to a 404.
 
-2. [src/types/database.ts:37] PRD constraint violation: `Review.body` is typed as `string` with no length limit. The PRD requires reviews ≤ 2,000 characters. Nothing in the visible stack (type, insert helper, or form) enforces this. Fix: add a database CHECK constraint in the migration and validate on the client before submit.
+2. [src/components/HeaderClient.tsx](src/components/HeaderClient.tsx#L41) The authenticated menu links to `/settings`, and the profile fallback also resolves to `/settings`, but there is no `/settings` route yet. In addition, a user with a username will resolve to `/user/{username}`, and there is no `/user/[username]` route yet either. Those menu entries currently route users into missing pages.

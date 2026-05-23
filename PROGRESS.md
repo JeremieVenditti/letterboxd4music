@@ -3,7 +3,7 @@
 ## Roadmap
 
 ### Phase 1 — Foundation
-- [ ] **1.1** Supabase migrations: create all tables (profiles, albums, ratings, reviews, review_likes, follows, lists, list_albums) with RLS policies
+- [x] **1.1** Supabase migrations: create all tables (profiles, albums, ratings, reviews, review_likes, follows, lists, list_albums) with RLS policies
 - [ ] **1.2** Auth pages: /login (sign up + login tabs), /auth/callback, password reset flow using Supabase Auth
 - [ ] **1.3** App shell: root layout with header (nav links, auth state, avatar dropdown) and footer
 
@@ -34,3 +34,4 @@
 ## Done
 
 - [2026-05-23] **2.1** build a half-star rating component at src/components/StarRating.tsx — interactive, 0.5 to 5.0 in half-star increments, hover preview, displays current value
+- [2026-05-23] **1.1** Supabase migrations: all tables + RLS policies

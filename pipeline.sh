@@ -8,6 +8,10 @@ LOOP=0
 CLAUDE="npx claude --print --dangerously-skip-permissions"
 CODEX="npx codex exec --dangerously-bypass-approvals-and-sandbox -s workspace-write"
 
+# Wrap AI calls so a non-zero exit (API hiccup, rate limit, etc.) doesn't abort the pipeline
+claude_run() { $CLAUDE "$1" || true; }
+codex_run() { $CODEX "$1" || true; }
+
 if [ -z "$TASK" ]; then
   echo "Usage: ./pipeline.sh 'build the star rating component'"
   exit 1
@@ -36,7 +40,7 @@ Output the full spec content directly (it will be saved to .agent/spec.md). Incl
 2. Function signatures and TypeScript interfaces
 3. Explicit constraints (what NOT to do)
 4. Acceptance criteria
-Do not write any implementation code." > .agent/spec.md
+Do not write any implementation code." > .agent/spec.md || { echo "⚠ Architect step failed — check API/quota."; exit 1; }
 
 echo "✓ Spec written to .agent/spec.md"
 
@@ -46,7 +50,7 @@ echo "▶ BUILDER (Codex) — writing code"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 SPEC=$(cat .agent/spec.md)
-$CODEX "You are a code implementation engine. Implement exactly what the spec says, nothing more.
+codex_run "You are a code implementation engine. Implement exactly what the spec says, nothing more.
 Rules:
 - One file at a time, complete implementations only
 - If the spec is ambiguous, make the most conservative interpretation
@@ -62,14 +66,14 @@ echo "▶ TYPE CHECK — verifying compilation"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 cd src && npx tsc --noEmit 2>&1 | tee /tmp/tsc-output.txt; TSC_EXIT=${PIPESTATUS[0]}; cd ..
-npx next lint --quiet 2>&1 | tee /tmp/lint-output.txt; LINT_EXIT=${PIPESTATUS[0]}
+cd src && npx eslint 2>&1 | tee /tmp/lint-output.txt; LINT_EXIT=${PIPESTATUS[0]}; cd ..
 
 if [[ $TSC_EXIT -ne 0 || $LINT_EXIT -ne 0 ]]; then
   echo ""
   echo "⚠ Type/lint errors found — feeding back to Fixer before Critic review."
   TSC_ERRORS=$(cat /tmp/tsc-output.txt)
   LINT_ERRORS=$(cat /tmp/lint-output.txt)
-  $CODEX "You are a surgical code editor. Fix the following TypeScript and lint errors. Minimal changes only — do not refactor or add features.
+  codex_run "You are a surgical code editor. Fix the following TypeScript and lint errors. Minimal changes only — do not refactor or add features.
 
 TYPE ERRORS:
 $TSC_ERRORS
@@ -87,7 +91,9 @@ while [ $LOOP -lt $MAX_LOOPS ]; do
   SPEC=$(cat .agent/spec.md)
   DIFF=$(git diff HEAD)
 
-  $CLAUDE "You are a senior code reviewer.
+  claude_run "You are a senior code reviewer.
+
+TASK: $TASK
 
 SPEC:
 $SPEC
@@ -99,25 +105,25 @@ CHANGES (git diff HEAD):
 $DIFF
 
 Output ONLY in this format:
+TASK: <task name>
 VERDICT: PASS or FAIL
 ISSUES:
 1. [file:line] issue description
 If no issues, write VERDICT: PASS and nothing else." > .agent/feedback.md
 
-  VERDICT=$(head -1 .agent/feedback.md)
+  VERDICT=$(grep "^VERDICT:" .agent/feedback.md | head -1)
   echo "Verdict: $VERDICT"
 
   if [[ "$VERDICT" == "VERDICT: PASS" ]]; then
     echo ""
-    echo "✓ Passed review. Committing."
+    echo "✓ Passed review. Updating progress log and staging changes."
     # Append to Done log
     echo "- [$(date '+%Y-%m-%d')] $TASK" >> PROGRESS.md
     # Mark matching roadmap item as done (first unchecked line containing key words)
     FIRST_WORD=$(echo "$TASK" | awk '{print $1}')
     sed -i '' "0,/- \[ \].*${FIRST_WORD}/{s/- \[ \]/- [x]/}" PROGRESS.md 2>/dev/null || true
     git add -A
-    git commit -m "feat: $TASK [agent pipeline]"
-    echo "✓ Done."
+    echo "✓ Changes staged. Review with 'git diff --staged', then commit when ready."
 
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -131,7 +137,7 @@ If no issues, write VERDICT: PASS and nothing else." > .agent/feedback.md
       SRC_CONTENTS="$SRC_CONTENTS\n\n--- $f ---\n$(cat $f)"
     done
 
-    $CLAUDE "You are an integration reviewer. All items below have been built independently by separate agents. Review them together for consistency issues.
+    claude_run "You are an integration reviewer. All items below have been built independently by separate agents. Review them together for consistency issues.
 
 COMPLETED ITEMS:
 $DONE_ITEMS
@@ -161,7 +167,7 @@ If no issues, write: ISSUES FOUND: none" > .agent/integration.md
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
   FEEDBACK=$(cat .agent/feedback.md)
-  $CODEX "You are a surgical code editor. Fix ONLY the numbered issues in the feedback below.
+  codex_run "You are a surgical code editor. Fix ONLY the numbered issues in the feedback below.
 Rules:
 - Minimal diff — do not rewrite working code
 - After each fix, note which issue number you resolved

@@ -12,6 +12,48 @@ CODEX="npx codex exec --dangerously-bypass-approvals-and-sandbox -s workspace-wr
 claude_run() { $CLAUDE "$1" || true; }
 codex_run() { $CODEX "$1" || true; }
 
+append_done_entry() {
+  printf -- "- [%s] %s\n" "$(date '+%Y-%m-%d')" "$1" >> PROGRESS.md
+}
+
+mark_roadmap_item_done() {
+  local task_text="$1"
+  local phase_id
+  local tmp_file
+
+  phase_id=$(printf '%s\n' "$task_text" | grep -Eo '[0-9]+\.[0-9]+' | head -1 || true)
+  if [[ -z "$phase_id" && -f .agent/spec.md ]]; then
+    phase_id=$(grep -Eo '\*\*[0-9]+\.[0-9]+\*\*' .agent/spec.md | head -1 | tr -d '*' || true)
+  fi
+
+  [[ -z "$phase_id" ]] && return 0
+  [[ -f PROGRESS.md ]] || return 0
+
+  tmp_file=$(mktemp)
+  awk -v phase_id="$phase_id" '
+    !done && $0 ~ /- \[ \]/ && index($0, "**" phase_id "**") {
+      sub(/- \[ \]/, "- [x]")
+      done = 1
+    }
+    { print }
+  ' PROGRESS.md > "$tmp_file"
+
+  mv "$tmp_file" PROGRESS.md
+}
+
+update_progress_log() {
+  local task_text="$1"
+
+  append_done_entry "$task_text" || {
+    echo "⚠ Could not append to PROGRESS.md; continuing to integrator review."
+    return 0
+  }
+
+  if ! mark_roadmap_item_done "$task_text"; then
+    echo "⚠ Could not update roadmap checkbox in PROGRESS.md; continuing to integrator review."
+  fi
+}
+
 if [ -z "$TASK" ]; then
   echo "Usage: ./pipeline.sh 'build the star rating component'"
   exit 1
@@ -117,11 +159,7 @@ If no issues, write VERDICT: PASS and nothing else." > .agent/feedback.md
   if [[ "$VERDICT" == "VERDICT: PASS" ]]; then
     echo ""
     echo "✓ Passed review. Updating progress log."
-    # Append to Done log
-    echo "- [$(date '+%Y-%m-%d')] $TASK" >> PROGRESS.md
-    # Mark matching roadmap item as done (first unchecked line containing key words)
-    FIRST_WORD=$(echo "$TASK" | awk '{print $1}')
-    perl -i '' -pe 'if (!$done && /- \[ \]/ && /'"$FIRST_WORD"'/) { s/- \[ \]/- [x]/; $done=1 }' PROGRESS.md 2>/dev/null || true
+    update_progress_log "$TASK"
     echo "✓ Review the changes with 'git diff', then stage and commit when ready."
 
     echo ""

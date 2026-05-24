@@ -62,7 +62,7 @@ function StarIcon({
       >
         <svg
           viewBox="0 0 24 24"
-          className="size-full fill-yellow-400 stroke-yellow-500"
+          className="size-full fill-[#1ED760] stroke-[#18b84f]"
         >
           <path d="M12 2.25 15.09 8.5l6.91 1-5 4.88 1.18 6.88L12 18.01l-6.18 3.25L7 14.38 2 9.5l6.91-1L12 2.25Z" />
         </svg>

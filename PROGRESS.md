@@ -37,3 +37,4 @@
 - [2026-05-23] **1.1** Supabase migrations: all tables + RLS policies
 - [2026-05-23] work on phase 1.2
 - [2026-05-23] Work on phase 1.3
+- [2026-05-24] Look at the feedback.md document to understand where we are in working on phase 2.2. Finish the needed edits for this and make sure it works properly.

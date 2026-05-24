@@ -166,3 +166,22 @@
   font-size: 12px;
   font-weight: 600;
 }
+
+.sticker {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--cream);
+  color: #14181C;
+  border: 1.5px solid #14181C;
+  border-radius: 4px;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.4);
+  transform: rotate(-3deg);
+  padding: 4px 10px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}

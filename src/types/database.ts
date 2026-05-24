@@ -48,6 +48,35 @@ export interface ReviewLike {
   created_at: string
 }
 
+/** Rating row joined with the reviewer's public profile fields */
+export interface RatingWithProfile extends Rating {
+  profiles: Pick<Profile, 'username' | 'display_name' | 'avatar_url'>
+}
+
+/** Review row joined with the reviewer's public profile fields */
+export interface ReviewWithProfile extends Review {
+  profiles: Pick<Profile, 'username' | 'display_name' | 'avatar_url'>
+}
+
+/** Histogram bucket — one entry per valid half-star value */
+export interface RatingBucket {
+  score: Score
+  count: number
+}
+
+/** All data required to render the album page */
+export interface AlbumPageData {
+  album: Album
+  histogram: RatingBucket[]
+  reviews: ReviewWithProfile[]
+  /** The current user's rating, or null if not rated / not logged in */
+  userRating: Rating | null
+  /** Whether there is a current authenticated user */
+  isAuthenticated: boolean
+  /** Whether the current user has verified their email */
+  canRate: boolean
+}
+
 export interface Follow {
   follower_id: string
   following_id: string

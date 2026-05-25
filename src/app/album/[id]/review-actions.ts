@@ -61,7 +61,7 @@ export async function upsertReview(
           rating_id: rating.id,
           user_id: user.id,
         },
-        { onConflict: "user_id,album_id" }
+        { onConflict: "rating_id" }
       )
       .select("*")
       .single<Review>();

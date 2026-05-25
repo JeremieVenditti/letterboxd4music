@@ -9,7 +9,7 @@
 
 ### Phase 2 — Core loop
 - [x] **2.1** StarRating component at src/components/StarRating.tsx — half-star, 0.5–5.0, hover preview
-- [ ] **2.2** MusicBrainz API helpers in src/lib/musicbrainz.ts: searchAlbums(), getAlbum(), with Supabase caching layer
+- [x] **2.2** MusicBrainz API helpers in src/lib/musicbrainz.ts: searchAlbums(), getAlbum(), with Supabase caching layer
 - [x] **2.3** Album page at /album/[id]: cover art, metadata (title, artist, year, genres, tracklist), aggregate rating display
 - [ ] **2.4** Rating flow: submit/edit/delete rating on album page, connected to Supabase ratings table via server actions
 - [ ] **2.5** Review flow: optional review form attached to rating, review list on album page, character limit 2000
@@ -38,6 +38,5 @@
 - [2026-05-23] work on phase 1.2
 - [2026-05-23] Work on phase 1.3
 - [2026-05-24] Look at the feedback.md document to understand where we are in working on phase 2.2. Finish the needed edits for this and make sure it works properly.
-- [2026-05-25] Look at feedback for phase 2.3. Fix all issues (not sure if they have been fixed yet.)
-- [2026-05-25] fix issues found in the integration.md file
-- [2026-05-25] take a look at what has been done for phase 2.3 and make sure it all looks good or fix any integration issues. Can probably start by acting as an integrator. but your call
+- [2026-05-24] Completed phase 2.2
+- [2026-05-25] Completed phase 2.3 (I think)

@@ -5,19 +5,9 @@ import { notFound } from "next/navigation";
 import AlbumHero from "@/components/AlbumHero";
 import ReviewList from "@/components/ReviewList";
 import { getAlbumPageData } from "@/lib/ratings";
-import { createClient } from "@/utils/supabase/server";
 
 interface AlbumPageProps {
   params: Promise<{ id: string }>;
-}
-
-async function getCurrentUserId(): Promise<string | null> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  return user?.id ?? null;
 }
 
 export async function generateMetadata({
@@ -54,10 +44,7 @@ export default async function AlbumPage({
   params,
 }: AlbumPageProps): Promise<JSX.Element> {
   const { id } = await params;
-  const [data, currentUserId] = await Promise.all([
-    getAlbumPageData(id),
-    getCurrentUserId(),
-  ]);
+  const data = await getAlbumPageData(id);
 
   if (!data) {
     notFound();
@@ -69,10 +56,11 @@ export default async function AlbumPage({
         album={data.album}
         histogram={data.histogram}
         userRating={data.userRating}
+        userReview={data.userReview}
         canRate={data.canRate}
         isAuthenticated={data.isAuthenticated}
       />
-      <ReviewList reviews={data.reviews} currentUserId={currentUserId} />
+      <ReviewList reviews={data.reviews} currentUserId={data.userId} />
     </>
   );
 }

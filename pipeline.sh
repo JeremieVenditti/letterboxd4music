@@ -4,6 +4,7 @@ set -e
 TASK="$1"
 MAX_LOOPS=3
 LOOP=0
+AGENT_BACKEND="${AGENT_BACKEND:-claude}"
 
 CLAUDE="npx claude --print --dangerously-skip-permissions"
 CODEX="npx codex exec --dangerously-bypass-approvals-and-sandbox -s workspace-write"
@@ -11,6 +12,97 @@ CODEX="npx codex exec --dangerously-bypass-approvals-and-sandbox -s workspace-wr
 # Wrap AI calls so a non-zero exit (API hiccup, rate limit, etc.) doesn't abort the pipeline
 claude_run() { $CLAUDE "$1" || true; }
 codex_run() { $CODEX "$1" || true; }
+
+case "$AGENT_BACKEND" in
+  claude)
+    ARCHITECT_LABEL="Claude"
+    REVIEWER_LABEL="Claude"
+    INTEGRATOR_LABEL="Claude"
+    ;;
+  codex)
+    ARCHITECT_LABEL="Codex"
+    REVIEWER_LABEL="Codex"
+    INTEGRATOR_LABEL="Codex"
+    ;;
+  *)
+    echo "Unsupported AGENT_BACKEND: $AGENT_BACKEND"
+    echo "Use 'claude' or 'codex'."
+    exit 1
+    ;;
+esac
+
+agent_text_run() {
+  if [[ "$AGENT_BACKEND" == "codex" ]]; then
+    codex_run "$1"
+  else
+    claude_run "$1"
+  fi
+}
+
+run_type_and_lint_checks() {
+  cd src && npx tsc --noEmit 2>&1 | tee /tmp/tsc-output.txt; TSC_EXIT=${PIPESTATUS[0]}; cd ..
+  cd src && npx eslint 2>&1 | tee /tmp/lint-output.txt; LINT_EXIT=${PIPESTATUS[0]}; cd ..
+
+  if [[ $TSC_EXIT -ne 0 || $LINT_EXIT -ne 0 ]]; then
+    echo ""
+    echo "⚠ Type/lint errors found — feeding back to Fixer before review."
+    TSC_ERRORS=$(cat /tmp/tsc-output.txt)
+    LINT_ERRORS=$(cat /tmp/lint-output.txt)
+    codex_run "You are a surgical code editor. Fix the following TypeScript and lint errors. Minimal changes only — do not refactor or add features.
+
+TYPE ERRORS:
+$TSC_ERRORS
+
+LINT ERRORS:
+$LINT_ERRORS"
+  fi
+}
+
+run_integration_review() {
+  local progress_text
+  local all_src
+  local src_contents
+  local spec
+
+  progress_text=$(cat PROGRESS.md)
+  spec=$(cat .agent/spec.md)
+  all_src=$(find src -type f \( -name "*.ts" -o -name "*.tsx" \) ! -path "*/ui/*" ! -path "*/.next/*" | sort)
+  src_contents=""
+  for f in $all_src; do
+    src_contents="$src_contents\n\n--- $f ---\n$(cat "$f")"
+  done
+
+  agent_text_run "You are an integration reviewer. Review the current implementation against the active task, the existing roadmap, and the already-built slices so the pipeline can fix integration problems automatically.
+
+TASK:
+$TASK
+
+CURRENT SPEC:
+$spec
+
+PROJECT PROGRESS:
+$progress_text
+
+SOURCE FILES:
+$src_contents
+
+Flag ONLY real problems:
+- Type mismatches across files (e.g. a prop defined one way, used another)
+- Broken imports or missing exports
+- Naming inconsistencies that will cause runtime errors
+- Conflicts with work that is still pending in PROGRESS.md
+- PRD constraint violations (half-star ratings 0.5–5.0, reviews max 2000 chars, one rating per user per album)
+
+Output to .agent/integration.md in this format:
+TASK: <name of the task just completed>
+ISSUES FOUND: <number or 'none'>
+1. [file:line] description
+If no issues, write ISSUES FOUND: none and nothing else." > .agent/integration.md
+}
+
+integration_passed() {
+  grep -q "^ISSUES FOUND: none$" .agent/integration.md
+}
 
 append_done_entry() {
   printf -- "- [%s] %s\n" "$(date '+%Y-%m-%d')" "$1" >> PROGRESS.md
@@ -61,19 +153,23 @@ fi
 
 PRD=$(cat PRD.md)
 DESIGN=$(cat DESIGN.md)
+PROGRESS=$(cat PROGRESS.md)
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "▶ ARCHITECT (Claude) — writing spec"
+echo "▶ ARCHITECT ($ARCHITECT_LABEL) — writing spec"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-$CLAUDE "You are a senior software architect.
+agent_text_run "You are a senior software architect.
 
 PRD:
 $PRD
 
 DESIGN SYSTEM:
 $DESIGN
+
+PROJECT PROGRESS:
+$PROGRESS
 
 TASK: $TASK
 
@@ -107,33 +203,18 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "▶ TYPE CHECK — verifying compilation"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-cd src && npx tsc --noEmit 2>&1 | tee /tmp/tsc-output.txt; TSC_EXIT=${PIPESTATUS[0]}; cd ..
-cd src && npx eslint 2>&1 | tee /tmp/lint-output.txt; LINT_EXIT=${PIPESTATUS[0]}; cd ..
-
-if [[ $TSC_EXIT -ne 0 || $LINT_EXIT -ne 0 ]]; then
-  echo ""
-  echo "⚠ Type/lint errors found — feeding back to Fixer before Critic review."
-  TSC_ERRORS=$(cat /tmp/tsc-output.txt)
-  LINT_ERRORS=$(cat /tmp/lint-output.txt)
-  codex_run "You are a surgical code editor. Fix the following TypeScript and lint errors. Minimal changes only — do not refactor or add features.
-
-TYPE ERRORS:
-$TSC_ERRORS
-
-LINT ERRORS:
-$LINT_ERRORS"
-fi
+run_type_and_lint_checks
 
 while [ $LOOP -lt $MAX_LOOPS ]; do
   echo ""
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "▶ CRITIC (Claude) — reviewing (loop $((LOOP+1))/$MAX_LOOPS)"
+  echo "▶ CRITIC ($REVIEWER_LABEL) — reviewing (loop $((LOOP+1))/$MAX_LOOPS)"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
   SPEC=$(cat .agent/spec.md)
   DIFF=$(git diff HEAD)
 
-  claude_run "You are a senior code reviewer.
+  agent_text_run "You are a senior code reviewer.
 
 TASK: $TASK
 
@@ -142,6 +223,9 @@ $SPEC
 
 DESIGN SYSTEM:
 $DESIGN
+
+PROJECT PROGRESS:
+$PROGRESS
 
 CHANGES (git diff HEAD):
 $DIFF
@@ -158,45 +242,79 @@ If no issues, write VERDICT: PASS and nothing else." > .agent/feedback.md
 
   if [[ "$VERDICT" == "VERDICT: PASS" ]]; then
     echo ""
-    echo "✓ Passed review. Updating progress log."
-    update_progress_log "$TASK"
-    echo "✓ Review the changes with 'git diff', then stage and commit when ready."
-
-    echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "▶ INTEGRATOR (Claude) — cross-component review"
+    echo "▶ INTEGRATOR ($INTEGRATOR_LABEL) — cross-component review"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-    DONE_ITEMS=$(grep "^\- \[x\]" PROGRESS.md || true)
-    ALL_SRC=$(find src -type f \( -name "*.ts" -o -name "*.tsx" \) ! -path "*/ui/*" ! -path "*/.next/*" | sort)
-    SRC_CONTENTS=""
-    for f in $ALL_SRC; do
-      SRC_CONTENTS="$SRC_CONTENTS\n\n--- $f ---\n$(cat $f)"
-    done
-
-    claude_run "You are an integration reviewer. All items below have been built independently by separate agents. Review them together for consistency issues.
-
-COMPLETED ITEMS:
-$DONE_ITEMS
-
-SOURCE FILES:
-$SRC_CONTENTS
-
-Flag ONLY real problems:
-- Type mismatches across files (e.g. a prop defined one way, used another)
-- Broken imports or missing exports
-- Naming inconsistencies that will cause runtime errors
-- PRD constraint violations (half-star ratings 0.5–5.0, reviews max 2000 chars, one rating per user per album)
-
-Output to .agent/integration.md in this format:
-TASK: <name of the task just completed>
-ISSUES FOUND: <number or 'none'>
-1. [file:line] description
-If no issues, write ISSUES FOUND: none and nothing else." > .agent/integration.md
+    run_integration_review
 
     echo ""
     cat .agent/integration.md
-    exit 0
+
+    if integration_passed; then
+      echo ""
+      echo "✓ Passed integration review. Updating progress log."
+      update_progress_log "$TASK"
+      echo "✓ Review the changes with 'git diff', then stage and commit when ready."
+      exit 0
+    fi
+
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "▶ ARCHITECT ($ARCHITECT_LABEL) — integration remediation"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+    INTEGRATION=$(cat .agent/integration.md)
+    SPEC=$(cat .agent/spec.md)
+    PROGRESS=$(cat PROGRESS.md)
+    agent_text_run "You are a senior software architect. Turn the integration review into a minimal remediation plan the fixer can apply safely.
+
+TASK:
+$TASK
+
+CURRENT SPEC:
+$SPEC
+
+PROJECT PROGRESS:
+$PROGRESS
+
+INTEGRATION REVIEW:
+$INTEGRATION
+
+Output a concise remediation spec directly to .agent/spec.md that includes:
+1. Exact files to adjust
+2. Minimal code changes required
+3. Constraints to avoid scope creep
+4. Acceptance criteria for the integration issues only" > .agent/spec.md
+
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "▶ FIXER (Codex) — applying integration feedback"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+    SPEC=$(cat .agent/spec.md)
+    codex_run "You are a surgical code editor. Resolve the integration issues using the remediation spec.
+Rules:
+- Fix only the reported integration issues
+- Keep the diff minimal
+- Preserve behavior outside the affected files
+- Do not refactor unrelated code
+
+REMEDIATION SPEC:
+$SPEC
+
+INTEGRATION REVIEW:
+$INTEGRATION"
+
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "▶ TYPE CHECK — verifying integration fixes"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+    run_type_and_lint_checks
+    PROGRESS=$(cat PROGRESS.md)
+    LOOP=$((LOOP+1))
+    continue
   fi
 
   echo ""
@@ -214,10 +332,20 @@ Rules:
 FEEDBACK:
 $FEEDBACK"
 
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "▶ TYPE CHECK — verifying feedback fixes"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+  run_type_and_lint_checks
+  PROGRESS=$(cat PROGRESS.md)
+
   LOOP=$((LOOP+1))
 done
 
 echo ""
 echo "⚠ Max loops reached without passing review."
+echo "Check .agent/feedback.md and .agent/integration.md for remaining issues."
+exit 1
 echo "Check .agent/feedback.md for remaining issues."
 exit 1

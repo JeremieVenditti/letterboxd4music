@@ -11,6 +11,7 @@ interface UserRatingWidgetProps {
   initialRating: Rating | null;
   canRate: boolean;
   isAuthenticated: boolean;
+  onRatingDeleted?: () => void;
 }
 
 export default function UserRatingWidget({
@@ -18,6 +19,7 @@ export default function UserRatingWidget({
   initialRating,
   canRate,
   isAuthenticated,
+  onRatingDeleted,
 }: UserRatingWidgetProps): JSX.Element {
   const [rating, setRating] = useState<Rating | null>(initialRating);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +65,10 @@ export default function UserRatingWidget({
       if ("error" in result) {
         setRating(previous);
         setError(result.error);
+        return;
       }
+
+      onRatingDeleted?.();
     });
   }
 

@@ -1,4 +1,4 @@
-export type Score = 0.5 | 1.0 | 1.5 | 2.0 | 2.5 | 3.0 | 3.5 | 4.0 | 4.5 | 5.0
+export type Score = 0.5 | 1 | 1.5 | 2 | 2.5 | 3 | 3.5 | 4 | 4.5 | 5
 
 export interface Profile {
   id: string
@@ -50,12 +50,13 @@ export interface ReviewLike {
 
 /** Rating row joined with the reviewer's public profile fields */
 export interface RatingWithProfile extends Rating {
-  profiles: Pick<Profile, 'username' | 'display_name' | 'avatar_url'>
+  profiles: Pick<Profile, 'username' | 'display_name' | 'avatar_url'> | null
 }
 
 /** Review row joined with the reviewer's public profile fields */
 export interface ReviewWithProfile extends Review {
-  profiles: Pick<Profile, 'username' | 'display_name' | 'avatar_url'>
+  profiles: Pick<Profile, 'username' | 'display_name' | 'avatar_url'> | null
+  ratings?: Pick<Rating, 'score'> | null
 }
 
 /** Histogram bucket — one entry per valid half-star value */
@@ -71,8 +72,11 @@ export interface AlbumPageData {
   reviews: ReviewWithProfile[]
   /** The current user's rating, or null if not rated / not logged in */
   userRating: Rating | null
+  /** The current user's review for this album, or null */
+  userReview: Review | null
   /** Whether there is a current authenticated user */
   isAuthenticated: boolean
+  userId: string | null
   /** Whether the current user has verified their email */
   canRate: boolean
 }

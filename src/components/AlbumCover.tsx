@@ -19,7 +19,7 @@ export default function AlbumCover({
   interactive = false,
 }: AlbumCoverProps): JSX.Element {
   const className = cn(
-    "relative overflow-hidden rounded-[4px] bg-[var(--bg-2)] shadow-2xl",
+    "relative overflow-hidden rounded-[4px] bg-[var(--bg-2)]",
     "aspect-square shrink-0 transition duration-[120ms] ease-out",
     interactive && "hover:scale-[1.02] hover:[outline:1.5px_solid_var(--green)]"
   );

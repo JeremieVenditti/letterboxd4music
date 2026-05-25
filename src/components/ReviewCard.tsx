@@ -8,13 +8,37 @@ interface ReviewCardProps {
   isOwn?: boolean;
 }
 
+function formatScore(score: number): string {
+  return Number.isInteger(score) ? score.toFixed(0) : score.toFixed(1);
+}
+
+function renderStars(score: number): string {
+  let remaining = score;
+  let stars = "";
+
+  for (let index = 0; index < 5; index += 1) {
+    if (remaining >= 1) {
+      stars += "★";
+      remaining -= 1;
+    } else if (remaining >= 0.5) {
+      stars += "½";
+      remaining = 0;
+    } else {
+      stars += "☆";
+    }
+  }
+
+  return stars;
+}
+
 export default function ReviewCard({
   review,
   isOwn = false,
 }: ReviewCardProps): JSX.Element {
   const profile = review.profiles;
-  const name = profile.display_name ?? profile.username;
+  const name = profile ? (profile.display_name ?? profile.username) : "anonymous";
   const initial = name.slice(0, 1).toUpperCase();
+  const score = review.ratings?.score ?? null;
 
   return (
     <article
@@ -24,7 +48,7 @@ export default function ReviewCard({
       )}
     >
       <div className="flex gap-3">
-        {profile.avatar_url ? (
+        {profile?.avatar_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={profile.avatar_url}
@@ -38,8 +62,18 @@ export default function ReviewCard({
         )}
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="font-sans text-sm font-semibold text-[var(--indigo)]">
-              {name}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="font-sans text-sm font-semibold text-[var(--indigo)]">
+                {name}
+              </div>
+              {score !== null && (
+                <div className="font-mono text-[12px] text-[var(--green)]">
+                  {renderStars(score)}
+                  <span className="ml-1 text-[var(--fg-3)]">
+                    {formatScore(score)}
+                  </span>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-1 text-[12px] text-[var(--fg-3)]">
               <svg

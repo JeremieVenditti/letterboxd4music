@@ -11,6 +11,17 @@
         "reveal": "always",
         "panel": "new"
       }
+    },
+    {
+      "label": "Run Codex pipeline",
+      "type": "shell",
+      "command": "./codex-pipeline.sh",
+      "args": ["${input:task}"],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      }
     }
   ],
   "inputs": [

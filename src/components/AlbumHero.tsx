@@ -1,14 +1,19 @@
+"use client";
+
 import type { CSSProperties, JSX } from "react";
+import { useOptimistic } from "react";
 
 import AlbumCover from "@/components/AlbumCover";
 import RatingHistogram from "@/components/RatingHistogram";
+import ReviewForm from "@/components/ReviewForm";
 import UserRatingWidget from "@/components/UserRatingWidget";
-import type { Album, Rating, RatingBucket } from "@/types/database";
+import type { Album, Rating, RatingBucket, Review } from "@/types/database";
 
 interface AlbumHeroProps {
   album: Album;
   histogram: RatingBucket[];
   userRating: Rating | null;
+  userReview: Review | null;
   canRate: boolean;
   isAuthenticated: boolean;
 }
@@ -17,19 +22,24 @@ export default function AlbumHero({
   album,
   histogram,
   userRating,
+  userReview,
   canRate,
   isAuthenticated,
 }: AlbumHeroProps): JSX.Element {
+  const [optimisticReview, setOptimisticReview] = useOptimistic(
+    userReview?.body ?? null,
+    (_prev: string | null, next: string | null) => next
+  );
   const primaryGenre = album.genres[0] ?? null;
   const heroStyle = {
-    "--dom": "#2a2a2a",
+    "--album-dom": "var(--bg-2)",
     background:
-      "radial-gradient(ellipse 80% 70% at 30% 30%, var(--dom, #2a2a2a) 0%, transparent 70%), linear-gradient(180deg, var(--dom, #2a2a2a) 0%, var(--bg-0) 70%)",
+      "radial-gradient(ellipse 80% 70% at 30% 30%, var(--album-dom) 0%, transparent 70%), linear-gradient(180deg, var(--album-dom) 0%, var(--bg-0) 70%)",
   } as CSSProperties;
 
   return (
     <section style={heroStyle} className="px-6 py-12 text-[var(--fg-1)]">
-      <div className="mx-auto grid w-full max-w-6xl gap-8 lg:grid-cols-[230px_1fr_360px] lg:items-end">
+      <div className="mx-auto grid w-full max-w-6xl gap-8 lg:grid-cols-[230px_minmax(0,1fr)_360px] lg:items-end">
         <AlbumCover
           src={album.cover_url}
           alt={`Album cover for ${album.title} by ${album.artist}`}
@@ -75,7 +85,19 @@ export default function AlbumHero({
             initialRating={userRating}
             canRate={canRate}
             isAuthenticated={isAuthenticated}
+            onRatingDeleted={() => setOptimisticReview(null)}
           />
+          {canRate && (
+            <div className="mt-4">
+              <ReviewForm
+                key={optimisticReview === null ? "no-review" : userReview?.id ?? "review"}
+                albumId={album.id}
+                canRate={canRate}
+                initialBody={optimisticReview}
+                onOptimisticUpdate={setOptimisticReview}
+              />
+            </div>
+          )}
         </div>
       </div>
     </section>

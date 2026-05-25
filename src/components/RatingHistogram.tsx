@@ -1,12 +1,14 @@
 import type { JSX } from "react";
 
-import type { RatingBucket } from "@/types/database";
+import type { RatingBucket, Score } from "@/types/database";
 
 interface RatingHistogramProps {
   histogram: RatingBucket[];
   avgRating: number | null;
   ratingCount: number;
 }
+
+const SCORES: Score[] = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
 
 function formatScore(score: number): string {
   return Number.isInteger(score) ? score.toFixed(0) : score.toFixed(1);
@@ -17,7 +19,11 @@ export default function RatingHistogram({
   avgRating,
   ratingCount,
 }: RatingHistogramProps): JSX.Element {
-  const maxCount = Math.max(1, ...histogram.map((bucket) => bucket.count));
+  const buckets = SCORES.map((score) => ({
+    score,
+    count: histogram.find((bucket) => bucket.score === score)?.count ?? 0,
+  }));
+  const maxCount = Math.max(1, ...buckets.map((bucket) => bucket.count));
 
   return (
     <section className="w-full max-w-[360px]" aria-label="Rating distribution">
@@ -35,7 +41,7 @@ export default function RatingHistogram({
         </div>
       </div>
       <div className="space-y-2">
-        {histogram.map((bucket) => (
+        {buckets.map((bucket) => (
           <div
             key={bucket.score}
             className="grid grid-cols-[32px_1fr_32px] items-center gap-2"

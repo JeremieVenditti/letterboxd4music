@@ -48,7 +48,7 @@ function StarIcon({
     <span className={cn("relative inline-block", className)} aria-hidden="true">
       <svg
         viewBox="0 0 24 24"
-        className="absolute inset-0 size-full fill-muted stroke-muted-foreground/40"
+        className="absolute inset-0 size-full fill-[var(--bg-3)] stroke-[var(--fg-4)]"
       >
         <path d="M12 2.25 15.09 8.5l6.91 1-5 4.88 1.18 6.88L12 18.01l-6.18 3.25L7 14.38 2 9.5l6.91-1L12 2.25Z" />
       </svg>
@@ -62,7 +62,7 @@ function StarIcon({
       >
         <svg
           viewBox="0 0 24 24"
-          className="size-full fill-[#1ED760] stroke-[#18b84f]"
+          className="size-full fill-[var(--green)] stroke-[var(--green)]"
         >
           <path d="M12 2.25 15.09 8.5l6.91 1-5 4.88 1.18 6.88L12 18.01l-6.18 3.25L7 14.38 2 9.5l6.91-1L12 2.25Z" />
         </svg>
@@ -194,7 +194,7 @@ export function StarRating({
                     disabled={disabled}
                     tabIndex={tabIndex}
                     className={cn(
-                      "absolute inset-y-0 inline-flex items-center justify-center rounded-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                      "absolute inset-y-0 inline-flex items-center justify-center rounded-sm transition-colors focus-visible:ring-2 focus-visible:ring-[var(--green)] focus-visible:ring-offset-2",
                       halfIndex === 0 ? "left-0 w-1/2" : "right-0 w-1/2",
                       interactive && "cursor-pointer",
                       !interactive && "cursor-default"
@@ -210,7 +210,7 @@ export function StarRating({
         })}
       </div>
       {showValue && (
-        <span className="text-sm tabular-nums text-muted-foreground">
+        <span className="text-sm tabular-nums text-[var(--fg-3)]">
           {currentValue === null ? "" : formatRating(currentValue)}
         </span>
       )}

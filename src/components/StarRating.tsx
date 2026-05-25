@@ -5,7 +5,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import type { Score } from "@/types/database"
 
-interface StarRatingProps {
+export interface StarRatingProps {
   value: Score | null
   onChange?: (value: Score) => void
   size?: "sm" | "md" | "lg"

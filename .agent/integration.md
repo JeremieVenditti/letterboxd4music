@@ -1,2 +1,2 @@
-TASK: Phase 2.3 review-actions integration review
+TASK: phase 2.4 rating flow
 ISSUES FOUND: none

@@ -1,11 +1,9 @@
 "use client";
 
 import type { CSSProperties, JSX } from "react";
-import { useOptimistic } from "react";
 
 import AlbumCover from "@/components/AlbumCover";
 import RatingHistogram from "@/components/RatingHistogram";
-import ReviewForm from "@/components/ReviewForm";
 import UserRatingWidget from "@/components/UserRatingWidget";
 import type { Album, Rating, RatingBucket, Review } from "@/types/database";
 
@@ -22,14 +20,9 @@ export default function AlbumHero({
   album,
   histogram,
   userRating,
-  userReview,
   canRate,
   isAuthenticated,
 }: AlbumHeroProps): JSX.Element {
-  const [optimisticReview, setOptimisticReview] = useOptimistic(
-    userReview?.body ?? null,
-    (_prev: string | null, next: string | null) => next
-  );
   const primaryGenre = album.genres[0] ?? null;
   const heroStyle = {
     "--album-dom": "var(--bg-2)",
@@ -85,19 +78,7 @@ export default function AlbumHero({
             initialRating={userRating}
             canRate={canRate}
             isAuthenticated={isAuthenticated}
-            onRatingDeleted={() => setOptimisticReview(null)}
           />
-          {canRate && (
-            <div className="mt-4">
-              <ReviewForm
-                key={optimisticReview === null ? "no-review" : userReview?.id ?? "review"}
-                albumId={album.id}
-                canRate={canRate}
-                initialBody={optimisticReview}
-                onOptimisticUpdate={setOptimisticReview}
-              />
-            </div>
-          )}
         </div>
       </div>
     </section>

@@ -5,12 +5,25 @@ import { revalidatePath } from "next/cache";
 import type { Rating, Score } from "@/types/database";
 import { createClient } from "@/utils/supabase/server";
 
-const VALID_SCORES = new Set<number>([0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]);
+const VALID_SCORES: ReadonlySet<number> = new Set([
+  0.5,
+  1,
+  1.5,
+  2,
+  2.5,
+  3,
+  3.5,
+  4,
+  4.5,
+  5,
+]);
+
+export type RatingActionResult<T> = { data: T } | { error: string };
 
 export async function upsertRating(
   albumId: string,
   score: Score
-): Promise<{ data: Rating } | { error: string }> {
+): Promise<RatingActionResult<Rating>> {
   if (!VALID_SCORES.has(score)) {
     return { error: "Invalid rating." };
   }
@@ -52,7 +65,7 @@ export async function upsertRating(
 
 export async function deleteRating(
   albumId: string
-): Promise<{ success: true } | { error: string }> {
+): Promise<RatingActionResult<{ success: true }>> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -60,6 +73,10 @@ export async function deleteRating(
 
   if (!user) {
     return { error: "You must sign in to delete a rating." };
+  }
+
+  if (!(user.email_confirmed_at ?? user.confirmed_at)) {
+    return { error: "Verify your email to delete ratings." };
   }
 
   const { error } = await supabase
@@ -74,5 +91,5 @@ export async function deleteRating(
 
   revalidatePath(`/album/${albumId}`);
 
-  return { success: true };
+  return { data: { success: true } };
 }

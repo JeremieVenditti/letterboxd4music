@@ -2,6 +2,7 @@
 
 import type { JSX } from "react";
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { deleteRating, upsertRating } from "@/app/album/[id]/actions";
 import { StarRating } from "@/components/StarRating";
 import type { Rating, Score } from "@/types/database";
@@ -21,6 +22,7 @@ export default function UserRatingWidget({
   isAuthenticated,
   onRatingDeleted,
 }: UserRatingWidgetProps): JSX.Element {
+  const router = useRouter();
   const [rating, setRating] = useState<Rating | null>(initialRating);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -51,6 +53,7 @@ export default function UserRatingWidget({
       }
 
       setRating(result.data);
+      router.refresh();
     });
   }
 
@@ -69,6 +72,7 @@ export default function UserRatingWidget({
       }
 
       onRatingDeleted?.();
+      router.refresh();
     });
   }
 

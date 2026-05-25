@@ -11,7 +11,7 @@
 - [x] **2.1** StarRating component at src/components/StarRating.tsx — half-star, 0.5–5.0, hover preview
 - [x] **2.2** MusicBrainz API helpers in src/lib/musicbrainz.ts: searchAlbums(), getAlbum(), with Supabase caching layer
 - [x] **2.3** Album page at /album/[id]: cover art, metadata (title, artist, year, genres, tracklist), aggregate rating display
-- [ ] **2.4** Rating flow: submit/edit/delete rating on album page, connected to Supabase ratings table via server actions
+- [x] **2.4** Rating flow: submit/edit/delete rating on album page, connected to Supabase ratings table via server actions
 - [ ] **2.5** Review flow: optional review form attached to rating, review list on album page, character limit 2000
 
 ### Phase 3 — Profiles
@@ -39,4 +39,4 @@
 - [2026-05-23] Work on phase 1.3
 - [2026-05-24] Look at the feedback.md document to understand where we are in working on phase 2.2. Finish the needed edits for this and make sure it works properly.
 - [2026-05-24] Completed phase 2.2
-- [2026-05-25] Completed phase 2.3 (I think)
+- [2026-05-25] Completed phase 2.3 (I think)- [2026-05-25] work on phase 2.4

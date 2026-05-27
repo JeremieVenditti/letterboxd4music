@@ -12,7 +12,7 @@
 - [x] **2.2** MusicBrainz API helpers in src/lib/musicbrainz.ts: searchAlbums(), getAlbum(), with Supabase caching layer for opening any MusicBrainz album and storing it locally on first fetch
 - [x] **2.3** Album page at /album/[id]: cover art, metadata (title, artist, year, genres, tracklist), aggregate rating display
 - [x] **2.4** Rating flow: submit/edit/delete rating on album page, connected to Supabase ratings table via server actions
-- [ ] **2.5** Review flow: optional review form attached to rating, review list on album page, character limit 2000
+- [x] **2.5** Review flow: optional review form attached to rating, review list on album page, character limit 2000
 - [ ] **2.6** Album discovery at /search: search MusicBrainz albums, open album pages from results, cache new albums in Supabase on demand
 
 ### Phase 3 — Profiles
@@ -44,3 +44,4 @@
 - [2026-05-24] Completed phase 2.2
 - [2026-05-25] Completed phase 2.3 (I think)
 - [2026-05-25] work on phase 2.4
+- [2026-05-27] fix the issue for 2.5 mentioned in the integration.md file

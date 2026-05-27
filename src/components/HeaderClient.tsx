@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { JSX } from "react";
+import type { FormEvent, JSX } from "react";
+import { useState } from "react";
 
 import { createClient } from "@/utils/supabase/client";
 import {
@@ -38,6 +39,7 @@ export default function HeaderClient({
   user,
 }: HeaderClientProps): JSX.Element {
   const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
   const profileHref = user?.username ? `/user/${user.username}` : "/settings";
 
   async function handleSignOut(): Promise<void> {
@@ -45,6 +47,18 @@ export default function HeaderClient({
 
     await supabase.auth.signOut();
     router.push("/login");
+  }
+
+  function handleSearchSubmit(event: FormEvent<HTMLFormElement>): void {
+    event.preventDefault();
+
+    const trimmedQuery = searchQuery.trim();
+
+    router.push(
+      trimmedQuery.length > 0
+        ? `/search?q=${encodeURIComponent(trimmedQuery)}`
+        : "/search"
+    );
   }
 
   return (
@@ -69,6 +83,25 @@ export default function HeaderClient({
             </Link>
           ))}
         </nav>
+
+        <form
+          onSubmit={handleSearchSubmit}
+          className="hidden flex-1 justify-center md:flex"
+        >
+          <label htmlFor="header-album-search" className="sr-only">
+            search albums
+          </label>
+          <input
+            id="header-album-search"
+            type="search"
+            value={searchQuery}
+            onChange={(event) => {
+              setSearchQuery(event.target.value);
+            }}
+            className="h-8 w-full max-w-[320px] rounded-[4px] border border-[var(--fg-4)] bg-[var(--bg-2)] px-3 text-[13px] text-[var(--fg-1)] outline-none transition duration-[120ms] placeholder:text-[var(--fg-3)] focus:border-[var(--green)] focus:ring-2 focus:ring-[var(--green)]"
+            placeholder="search albums"
+          />
+        </form>
 
         <div className="flex min-w-[76px] items-center justify-end">
           {user ? (

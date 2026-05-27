@@ -4,6 +4,7 @@ set -e
 TASK="$1"
 MAX_LOOPS=3
 LOOP=0
+NEEDS_FINAL_REVIEW=0
 AGENT_BACKEND="${AGENT_BACKEND:-claude}"
 
 CLAUDE="npx claude --print --dangerously-skip-permissions"
@@ -205,10 +206,17 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 
 run_type_and_lint_checks
 
-while [ $LOOP -lt $MAX_LOOPS ]; do
+while [ $LOOP -lt $MAX_LOOPS ] || [ $NEEDS_FINAL_REVIEW -eq 1 ]; do
+  FINAL_REVIEW=$NEEDS_FINAL_REVIEW
+  NEEDS_FINAL_REVIEW=0
+
   echo ""
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "▶ CRITIC ($REVIEWER_LABEL) — reviewing (loop $((LOOP+1))/$MAX_LOOPS)"
+  if [[ $FINAL_REVIEW -eq 1 ]]; then
+    echo "▶ CRITIC ($REVIEWER_LABEL) — final verification after remediation"
+  else
+    echo "▶ CRITIC ($REVIEWER_LABEL) — reviewing (loop $((LOOP+1))/$MAX_LOOPS)"
+  fi
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
   SPEC=$(cat .agent/spec.md)
@@ -257,6 +265,10 @@ If no issues, write VERDICT: PASS and nothing else." > .agent/feedback.md
       update_progress_log "$TASK"
       echo "✓ Review the changes with 'git diff', then stage and commit when ready."
       exit 0
+    fi
+
+    if [[ $FINAL_REVIEW -eq 1 ]]; then
+      break
     fi
 
     echo ""
@@ -313,8 +325,15 @@ $INTEGRATION"
 
     run_type_and_lint_checks
     PROGRESS=$(cat PROGRESS.md)
+    if [ $((LOOP + 1)) -ge $MAX_LOOPS ]; then
+      NEEDS_FINAL_REVIEW=1
+    fi
     LOOP=$((LOOP+1))
     continue
+  fi
+
+  if [[ $FINAL_REVIEW -eq 1 ]]; then
+    break
   fi
 
   echo ""
@@ -340,6 +359,9 @@ $FEEDBACK"
   run_type_and_lint_checks
   PROGRESS=$(cat PROGRESS.md)
 
+  if [ $((LOOP + 1)) -ge $MAX_LOOPS ]; then
+    NEEDS_FINAL_REVIEW=1
+  fi
   LOOP=$((LOOP+1))
 done
 

@@ -1,9 +1,11 @@
 "use client";
 
 import type { CSSProperties, JSX } from "react";
+import { useState } from "react";
 
 import AlbumCover from "@/components/AlbumCover";
 import RatingHistogram from "@/components/RatingHistogram";
+import ReviewForm from "@/components/ReviewForm";
 import UserRatingWidget from "@/components/UserRatingWidget";
 import type { Album, Rating, RatingBucket, Review } from "@/types/database";
 
@@ -20,9 +22,12 @@ export default function AlbumHero({
   album,
   histogram,
   userRating,
+  userReview,
   canRate,
   isAuthenticated,
 }: AlbumHeroProps): JSX.Element {
+  const [hasRating, setHasRating] = useState(userRating !== null);
+  const [reviewBody, setReviewBody] = useState(userReview?.body ?? null);
   const primaryGenre = album.genres[0] ?? null;
   const heroStyle = {
     "--album-dom": "var(--bg-2)",
@@ -78,6 +83,17 @@ export default function AlbumHero({
             initialRating={userRating}
             canRate={canRate}
             isAuthenticated={isAuthenticated}
+            onRatingDeleted={() => {
+              setHasRating(false);
+              setReviewBody(null);
+            }}
+          />
+          <ReviewForm
+            albumId={album.id}
+            canReview={canRate}
+            hasRating={hasRating}
+            initialBody={reviewBody}
+            onOptimisticUpdate={setReviewBody}
           />
         </div>
       </div>

@@ -1,4 +1,5 @@
 import type { JSX } from "react";
+import Image from "next/image";
 
 import { cn } from "@/lib/utils";
 import type { ReviewWithProfile } from "@/types/database";
@@ -36,7 +37,7 @@ export default function ReviewCard({
   isOwn = false,
 }: ReviewCardProps): JSX.Element {
   const profile = review.profiles;
-  const name = profile ? (profile.display_name ?? profile.username) : "anonymous";
+  const name = profile?.display_name || profile?.username || "Anonymous";
   const initial = name.slice(0, 1).toUpperCase();
   const score = review.ratings?.score ?? null;
 
@@ -49,10 +50,12 @@ export default function ReviewCard({
     >
       <div className="flex gap-3">
         {profile?.avatar_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={profile.avatar_url}
             alt=""
+            width={32}
+            height={32}
+            unoptimized
             className="size-8 rounded-full object-cover"
           />
         ) : (

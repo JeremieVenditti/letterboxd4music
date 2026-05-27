@@ -53,6 +53,7 @@ export default async function AlbumPage({
   return (
     <>
       <AlbumHero
+        key={`${data.userRating?.id ?? "none"}:${data.userReview?.id ?? "none"}`}
         album={data.album}
         histogram={data.histogram}
         userRating={data.userRating}

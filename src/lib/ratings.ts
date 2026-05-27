@@ -90,7 +90,10 @@ export const getAlbumPageData: (
       console.error("Fallback reviews query failed", fallbackReviewsResult.error);
       reviewsData = [];
     } else {
-      reviewsData = fallbackReviewsResult.data;
+      reviewsData = (fallbackReviewsResult.data ?? []).map((review) => ({
+        ...review,
+        ratings: null,
+      }));
     }
   }
 

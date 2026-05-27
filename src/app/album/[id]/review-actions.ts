@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import type { Rating, Review } from "@/types/database";
 import { createClient } from "@/utils/supabase/server";
 
+export type ReviewActionResult<T> = { data: T } | { error: string };
+
 function sanitizeBody(body: string): string {
   return body.replace(/<[^>]*>/g, "").trim();
 }
@@ -12,7 +14,7 @@ function sanitizeBody(body: string): string {
 export async function upsertReview(
   albumId: string,
   body: string
-): Promise<{ data: Review } | { error: string }> {
+): Promise<ReviewActionResult<Review>> {
   try {
     const sanitizedBody = sanitizeBody(body);
 
@@ -39,13 +41,13 @@ export async function upsertReview(
 
     const { data: rating, error: ratingError } = await supabase
       .from("ratings")
-      .select("*")
+      .select("id")
       .eq("album_id", albumId)
       .eq("user_id", user.id)
-      .maybeSingle<Rating>();
+      .maybeSingle<Pick<Rating, "id">>();
 
     if (ratingError) {
-      return { error: ratingError.message };
+      return { error: "Could not save review." };
     }
 
     if (!rating) {
@@ -67,7 +69,7 @@ export async function upsertReview(
       .single<Review>();
 
     if (error || !data) {
-      return { error: error?.message ?? "Could not save review." };
+      return { error: "Could not save review." };
     }
 
     revalidatePath(`/album/${albumId}`);
@@ -80,7 +82,7 @@ export async function upsertReview(
 
 export async function deleteReview(
   albumId: string
-): Promise<{ success: true } | { error: string }> {
+): Promise<ReviewActionResult<{ success: true }>> {
   try {
     const supabase = await createClient();
     const {
@@ -88,26 +90,26 @@ export async function deleteReview(
     } = await supabase.auth.getUser();
 
     if (!user) {
-      return { error: "You must sign in to delete a review." };
+      return { error: "You must sign in to review albums." };
     }
 
     if (!(user.email_confirmed_at ?? user.confirmed_at)) {
-      return { error: "Verify your email to delete reviews." };
+      return { error: "Verify your email to review albums." };
     }
 
     const { data: rating, error: ratingError } = await supabase
       .from("ratings")
-      .select("*")
+      .select("id")
       .eq("album_id", albumId)
       .eq("user_id", user.id)
-      .maybeSingle<Rating>();
+      .maybeSingle<Pick<Rating, "id">>();
 
     if (ratingError) {
-      return { error: ratingError.message };
+      return { error: "Could not delete review." };
     }
 
     if (!rating) {
-      return { error: "You must rate this album before deleting its review." };
+      return { error: "You must rate this album before reviewing it." };
     }
 
     const { error } = await supabase
@@ -118,12 +120,12 @@ export async function deleteReview(
       .eq("rating_id", rating.id);
 
     if (error) {
-      return { error: error.message };
+      return { error: "Could not delete review." };
     }
 
     revalidatePath(`/album/${albumId}`);
 
-    return { success: true };
+    return { data: { success: true } };
   } catch {
     return { error: "Could not delete review." };
   }

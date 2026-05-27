@@ -2,6 +2,7 @@
 
 import type { FormEvent, JSX } from "react";
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 import {
   deleteReview,
@@ -10,9 +11,10 @@ import {
 
 interface ReviewFormProps {
   albumId: string;
-  canRate: boolean;
+  canReview: boolean;
+  hasRating: boolean;
   initialBody: string | null;
-  onOptimisticUpdate: (body: string | null) => void;
+  onOptimisticUpdate?: (body: string | null) => void;
 }
 
 function sanitizeBody(body: string): string {
@@ -21,10 +23,12 @@ function sanitizeBody(body: string): string {
 
 export default function ReviewForm({
   albumId,
-  canRate,
+  canReview,
+  hasRating,
   initialBody,
   onOptimisticUpdate,
 }: ReviewFormProps): JSX.Element | null {
+  const router = useRouter();
   const [body, setBody] = useState(initialBody ?? "");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -34,8 +38,21 @@ export default function ReviewForm({
   const counterColor =
     characterCount >= 1900 ? "text-[var(--danger)]" : "text-[var(--fg-4)]";
 
-  if (!canRate) {
+  if (!canReview) {
     return null;
+  }
+
+  if (!hasRating) {
+    return (
+      <div className="rounded-[4px] border border-[var(--fg-4)] bg-[var(--bg-1)] p-4">
+        <div className="font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--fg-3)]">
+          YOUR REVIEW
+        </div>
+        <p className="mt-2 text-sm text-[var(--fg-2)]">
+          You must rate this album before reviewing it.
+        </p>
+      </div>
+    );
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -55,21 +72,26 @@ export default function ReviewForm({
       return;
     }
 
+    const previousBody = body;
+    const previousHasReview = hasReview;
+
     startTransition(async () => {
       setHasReview(true);
-      onOptimisticUpdate(sanitizedBody);
+      onOptimisticUpdate?.(sanitizedBody);
 
       const result = await upsertReview(albumId, sanitizedBody);
 
       if ("error" in result) {
-        setHasReview(initialBody !== null);
-        setBody(initialBody ?? "");
-        onOptimisticUpdate(initialBody ?? null);
+        setHasReview(previousHasReview);
+        setBody(previousBody);
+        onOptimisticUpdate?.(previousHasReview ? previousBody : null);
         setError(result.error);
         return;
       }
 
       setBody(result.data.body);
+      onOptimisticUpdate?.(result.data.body);
+      router.refresh();
     });
   }
 
@@ -85,19 +107,20 @@ export default function ReviewForm({
     startTransition(async () => {
       setHasReview(false);
       setBody("");
-      onOptimisticUpdate(null);
+      onOptimisticUpdate?.(null);
 
       const result = await deleteReview(albumId);
 
       if ("error" in result) {
         setHasReview(true);
         setBody(previousBody);
-        onOptimisticUpdate(previousBody);
+        onOptimisticUpdate?.(previousBody);
         setError(result.error);
         return;
       }
 
       setIsConfirmingDelete(false);
+      router.refresh();
     });
   }
 

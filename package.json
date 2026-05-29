@@ -1,0 +1,10 @@
+{
+  "name": "letterboxd4music-workspace",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix src run dev",
+    "build": "npm --prefix src run build",
+    "start": "npm --prefix src run start",
+    "lint": "npm --prefix src run lint"
+  }
+}

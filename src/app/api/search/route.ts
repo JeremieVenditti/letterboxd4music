@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 
+import type { MusicBrainzAlbum } from "@/lib/musicbrainz";
 import { searchAlbums } from "@/lib/musicbrainz";
 
-export async function GET(request: Request): Promise<NextResponse> {
+export async function GET(
+  request: Request
+): Promise<NextResponse<MusicBrainzAlbum[] | { error: string }>> {
   const { searchParams } = new URL(request.url);
   const query = searchParams.get("q") ?? "";
 

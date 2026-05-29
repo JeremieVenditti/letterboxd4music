@@ -22,6 +22,8 @@ export default function SearchClient({
   const [resultsQuery, setResultsQuery] = useState(initialQuery);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [openError, setOpenError] = useState<string | null>(null);
+  const [openingAlbumId, setOpeningAlbumId] = useState<string | null>(null);
   const firstRender = useRef(true);
 
   useEffect(() => {
@@ -50,6 +52,7 @@ export default function SearchClient({
 
       setIsLoading(true);
       setError(null);
+      setOpenError(null);
 
       void fetch(`/api/search?q=${encodeURIComponent(trimmedQuery)}`)
         .then((response) => {
@@ -86,6 +89,42 @@ export default function SearchClient({
 
   const trimmedQuery = query.trim();
 
+  async function openAlbum(album: MusicBrainzAlbum): Promise<void> {
+    if (openingAlbumId) {
+      return;
+    }
+
+    setOpeningAlbumId(album.id);
+    setOpenError(null);
+
+    try {
+      const response = await fetch("/api/albums/cache", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ album }),
+      });
+
+      const body = (await response.json()) as { id?: unknown; error?: unknown };
+
+      if (!response.ok || typeof body.id !== "string") {
+        throw new Error(
+          typeof body.error === "string" ? body.error : "Album could not open."
+        );
+      }
+
+      router.push(`/album/${body.id}`);
+    } catch (openAlbumError) {
+      setOpenError(
+        openAlbumError instanceof Error
+          ? openAlbumError.message
+          : "Album could not open."
+      );
+      setOpeningAlbumId(null);
+    }
+  }
+
   return (
     <main className="min-h-[calc(100vh-56px)] bg-[var(--bg-0)] px-4 py-8 text-[var(--fg-1)] sm:px-6 lg:px-8">
       <div className="mx-auto grid max-w-[1280px] gap-8">
@@ -108,6 +147,7 @@ export default function SearchClient({
                 setResults([]);
                 setResultsQuery("");
                 setError(null);
+                setOpenError(null);
                 setIsLoading(false);
               }
             }}
@@ -121,6 +161,10 @@ export default function SearchClient({
 
         {!isLoading && error ? (
           <p className="text-[14px] text-[var(--fg-3)]">{error}</p>
+        ) : null}
+
+        {!isLoading && openError ? (
+          <p className="text-[14px] text-[var(--fg-3)]">{openError}</p>
         ) : null}
 
         {!isLoading && !error && trimmedQuery.length < 2 ? (
@@ -146,7 +190,13 @@ export default function SearchClient({
             </p>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
               {results.map((album) => (
-                <AlbumCard key={album.id} album={album} size="md" />
+                <AlbumCard
+                  key={album.id}
+                  album={album}
+                  size="md"
+                  onOpen={openAlbum}
+                  isOpening={openingAlbumId === album.id}
+                />
               ))}
             </div>
           </section>

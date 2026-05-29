@@ -14,6 +14,8 @@ import type {
 import { createClient } from "@/utils/supabase/server";
 
 const SCORES: Score[] = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export function buildHistogram(ratings: Rating[]): RatingBucket[] {
   return SCORES.map((score) => ({
@@ -27,6 +29,10 @@ export const getAlbumPageData: (
 ) => Promise<AlbumPageData | null> = cache(async function getAlbumPageData(
   albumId: string
 ): Promise<AlbumPageData | null> {
+  if (!UUID_PATTERN.test(albumId)) {
+    return null;
+  }
+
   const supabase = await createClient();
 
   const {
